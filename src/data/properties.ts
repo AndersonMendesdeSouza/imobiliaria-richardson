@@ -40,7 +40,7 @@ export interface Property {
 }
 
 export const contact = {
-  whatsapp: 'https://wa.me/message/5OHZYWIBRSASD1',
+  whatsapp: 'https://wa.me/556481409900',
   instagram: 'https://www.instagram.com/rplagodasbrisas/',
 }
 

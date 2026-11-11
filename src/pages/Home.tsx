@@ -1,55 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
 import { Icon } from '../components/Icon'
 import { Brand } from '../components/Brand'
-import { PropertyCard } from '../components/PropertyCard'
+import { PropertyCarousel } from '../components/PropertyCarousel'
 import { contact, properties } from '../data/properties'
 import type { PropertyCategory } from '../data/properties'
 import heroImage from '../assets/casas/casa1/image copy 2.png'
 import aboutImage from '../assets/casas/casa1/image copy.png'
 
+export type PropertyFilter = 'all' | PropertyCategory
+
 interface HomeProps {
-  category: PropertyCategory
-  onCategoryChange: (category: PropertyCategory) => void
+  filter: PropertyFilter
+  onFilterChange: (filter: PropertyFilter) => void
 }
 
-export function Home({ category, onCategoryChange }: HomeProps) {
-  const carousel = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ atStart: true, atEnd: false })
-  const visibleProperties = properties.filter((property) => property.category === category)
-
-  function changeCategory(nextCategory: PropertyCategory) {
-    onCategoryChange(nextCategory)
-    setPosition({ atStart: true, atEnd: false })
-  }
-
-  function scrollCarousel(direction: number) {
-    const rail = carousel.current
-    if (!rail) return
-    const card = rail.querySelector('article')
-    rail.scrollBy({ left: direction * ((card?.getBoundingClientRect().width ?? rail.clientWidth) + 24), behavior: 'smooth' })
-  }
-
-  function updatePosition() {
-    const rail = carousel.current
-    if (!rail) return
-    setPosition({ atStart: rail.scrollLeft < 4, atEnd: rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4 })
-  }
-
-  useEffect(() => {
-    window.addEventListener('resize', updatePosition)
-    return () => window.removeEventListener('resize', updatePosition)
-  })
-
-  function handleTabKey(event: KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') {
-      event.preventDefault()
-      const nextCategory = category === 'house' ? 'land' : 'house'
-      const target = event.key === 'Home' ? 'house' : event.key === 'End' ? 'land' : nextCategory
-      changeCategory(target)
-      document.getElementById(`tab-${target}`)?.focus()
-    }
-  }
+export function Home({ filter, onFilterChange }: HomeProps) {
+  const houses = properties.filter((property) => property.category === 'house')
+  const lands = properties.filter((property) => property.category === 'land')
 
   return (
     <main id="conteudo" tabIndex={-1}>
@@ -83,18 +49,27 @@ export function Home({ category, onCategoryChange }: HomeProps) {
             <p>Uma casa para viver. Um lote para sonhar.<br />O próximo passo da sua história está aqui.</p>
           </div>
           <div className="catalog-toolbar">
-            <div className="category-tabs" role="tablist" aria-label="Tipo de imóvel">
-              <button type="button" id="tab-house" role="tab" aria-selected={category === 'house'} aria-controls="property-panel" tabIndex={category === 'house' ? 0 : -1} onClick={() => changeCategory('house')} onKeyDown={handleTabKey}><Icon name="house" />Casas<span>04</span></button>
-              <button type="button" id="tab-land" role="tab" aria-selected={category === 'land'} aria-controls="property-panel" tabIndex={category === 'land' ? 0 : -1} onClick={() => changeCategory('land')} onKeyDown={handleTabKey}><Icon name="area" />Lotes<span>04</span></button>
+            <div className="category-tabs" role="group" aria-label="Filtrar por tipo de imóvel">
+              <button type="button" aria-pressed={filter === 'all'} onClick={() => onFilterChange('all')}>
+                Todos<span>{properties.length.toString().padStart(2, '0')}</span>
+              </button>
+              <button type="button" aria-pressed={filter === 'house'} onClick={() => onFilterChange('house')}>
+                <Icon name="house" />Casas<span>{houses.length.toString().padStart(2, '0')}</span>
+              </button>
+              <button type="button" aria-pressed={filter === 'land'} onClick={() => onFilterChange('land')}>
+                <Icon name="area" />Lotes<span>{lands.length.toString().padStart(2, '0')}</span>
+              </button>
             </div>
-            <div className="carousel-controls"><span>Encontre novas possibilidades</span><button className="icon-button" disabled={position.atStart} aria-label="Imóveis anteriores" onClick={() => scrollCarousel(-1)}><Icon name="arrow" className="rotate" /></button><button className="icon-button" disabled={position.atEnd} aria-label="Próximos imóveis" onClick={() => scrollCarousel(1)}><Icon name="arrow" /></button></div>
           </div>
-          <div id="property-panel" role="tabpanel" aria-labelledby={`tab-${category}`} tabIndex={0}>
-            <div className="property-carousel" key={category} ref={carousel} onScroll={updatePosition} aria-label={category === 'house' ? 'Carrossel de casas' : 'Carrossel de lotes'}>
-              {visibleProperties.map((property) => <PropertyCard key={property.id} property={property} />)}
-            </div>
+          <div className="property-groups" aria-live="polite">
+            {(filter === 'all' || filter === 'house') && (
+              <PropertyCarousel key="house" category="house" properties={houses} />
+            )}
+            {(filter === 'all' || filter === 'land') && (
+              <PropertyCarousel key="land" category="land" properties={lands} />
+            )}
           </div>
-          <div className="catalog-bottom"><span className="demo-note">Catálogo demonstrativo · Valores e características fictícios.</span><span className="swipe-note">Deslize para explorar<Icon name="arrow" /></span></div>
+          <div className="catalog-bottom"><span className="demo-note">Catálogo demonstrativo · Valores e características fictícios.</span></div>
         </div>
       </section>
 
